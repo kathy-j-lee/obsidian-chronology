@@ -53,7 +53,9 @@ export const ExpandableNoteList = ({ items, onOpen }: {
             </div>
         );
     }
-
+    if (!items || items.length === 0) {
+        return null; // or return an empty fragment: <></>
+    }
     return (
         <div className="chrono-cluster-container">
             {items && items.map(item =>
@@ -64,31 +66,51 @@ export const ExpandableNoteList = ({ items, onOpen }: {
 }
 
 
+/**
+ * Retrieves the clustering strategy based on the calendar item type.
+ * 
+ * This function defines different clustering strategies for different calendar item types.
+ * Each strategy includes:
+ * - `slots`: An array representing the time slots or days.
+ * - `clusters`: An array representing the cluster intervals.
+ * - `slotFn`: A function to determine the slot for a given note.
+ * - `clusterFn`: A function to determine the cluster for a given note.
+ * 
+ * @returns {Object} An object containing clustering strategies for each calendar item type.
+ */
 function getClusteringStrategy() {
-
-
     const clusteringStrategies = {
-            [CalendarItemType.Day]: {
-                slots: range(0, 23).reverse().map(n => moment().hour(n).format(getChronologySettings().use24Hours?"HH":"hh A")),
-                clusters: range(0, 5).reverse().map(s => (s * 10).toString()),
-                slotFn: (item: NoteAttributes) => moment(item.time).format(getChronologySettings().use24Hours?"HH":"hh A"),
-                clusterFn: (item: NoteAttributes) => (Math.floor(moment(item.time).minutes() / 10) * 10).toString()
-            },
-            [CalendarItemType.Week]: {
-                slots: moment.weekdaysShort(true),
-                clusters: range(0, 5).reverse().map(s => (s * 4).toString()), 
-                slotFn: (item: NoteAttributes) => moment.weekdaysShort()[moment(item.time).day()],
-                clusterFn: (item: NoteAttributes) => (Math.floor(moment(item.time).hours()/4)*4).toString()
-            },
-            [CalendarItemType.Month]: undefined,
-            [CalendarItemType.Year]: undefined,
-        }
-    
+        [CalendarItemType.Day]: {
+            slots: range(0, 23).map(n => moment().hour(n).format(getChronologySettings().use24Hours ? "HH" : "hh A")),
+            clusters: range(0, 2).map(s => (s * 10).toString()),
+            slotFn: (item: NoteAttributes) => moment(item.time).format(getChronologySettings().use24Hours ? "HH" : "hh A"),
+            clusterFn: (item: NoteAttributes) => (Math.floor(moment(item.time).minutes() / 10) * 10).toString()
+        },
+        [CalendarItemType.Week]: {
+            slots: moment.weekdaysShort(true),
+            clusters: range(0, 5).reverse().map(s => (s * 4).toString()),
+            slotFn: (item: NoteAttributes) => moment.weekdaysShort()[moment(item.time).day()],
+            clusterFn: (item: NoteAttributes) => (Math.floor(moment(item.time).hours() / 4) * 4).toString()
+        },
+        [CalendarItemType.Month]: undefined,
+        [CalendarItemType.Year]: undefined,
+    };
+
     return clusteringStrategies;
 }
 
 
 
+/**
+ * TimeLine component renders a timeline visualization of notes.
+ * 
+ * @param {Object} props - The component props.
+ * @param {CalendarItem} props.calItem - The calendar item to determine the type of timeline.
+ * @param {NoteAttributes[]} props.items - The list of note attributes to be displayed.
+ * @param {Function} props.onOpen - Callback function to handle opening a note.
+ * 
+ * @returns {JSX.Element} A JSX element representing the timeline.
+ */
 export const TimeLine = ({ calItem, items, onOpen }:
     {
         calItem: CalendarItem,
